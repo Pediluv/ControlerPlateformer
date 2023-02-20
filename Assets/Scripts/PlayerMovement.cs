@@ -9,12 +9,14 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Parameters")]
     [Tooltip("Abusez pas vous comprenez qand même ce qu'est une vitesse de déplacement")]
     public float moveSpeed;
+    [Tooltip("vitesse max de chute du perso pour éviter une accélération infinie et le passage à travres les hitbox")]
+    [SerializeField] private float maxVerticalSpeed;
     [Tooltip("pariel sur la puissance du saut, la puissance du saut est plus basse que la vitesse de déplacement car elle utilise une échelle différente du SmoothDamp)")]
-    public float jumpForce;    
+    public float jumpForce;
     private float movehorizontal;
-    private float movevertical;
     private Vector3 velocity = Vector3.zero;
     private bool isGrounded;
+    private bool isJumping = false;
     [Tooltip("Règle l'accélération du SmoothDamp (n'y touchez pas trop c'est chiant à régler :')")]
     [SerializeField] private float SDOffset;
     [Tooltip("Leger délai pour sauter après une chutte d'une plateforme")]
@@ -23,7 +25,16 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("Permet de sauter légèrement avant d'avoir touché le sol")]
     [SerializeField] private float jumpBufferTime;
     private float jumpBufferTimeCounter;
-    
+
+    [Header("Gravity Parameters")]
+    [Tooltip("écehlle de gravité de base du perso, quand il est au sol, elle augmente lorqu'il a sauté, hésitez pas à faire des tests avec et la modif au max")]
+    [SerializeField] private float baseOriginGravityScale;
+    [Tooltip("échelle de gravité du perso en mode durci, plus élevée que celle du mode de base/fragile")]
+    [SerializeField] private float hardenedOriginGravityScale;
+    [Tooltip("règle la vitesse d'augmentation de la gravité une fois que le perso a quitté le sol, pareil hésitez pas à faire des tests avec")]
+    [SerializeField] private float gravityScaleIncrease;
+    [Tooltip("La limite max de Gravity Scale, histoire que le perso s'enfonce pas à travers la map en sautant de trop haut")]
+    [SerializeField] private float gravityLimit;
 
     [Header("Dash Parameters")]
     [Tooltip("La touche du Dash/autre action")]
@@ -46,10 +57,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float sizeRay;
     private RaycastHit2D hitground;
     private bool cannotFly;
-    [Tooltip("Place la vitesse du RigidBody à 0 à chaque frame pour ralentir le perso en lui forçant une vitesse aditionnée à la gravité")]
+    [Tooltip("La vitesse de chute du perso pendant qu'il plane")]
     [SerializeField] private float SlowFall;
     //permet de déclancher le planage en double clic de saut
     private bool canPlane = false;
+    private bool isFlying = false;
 
     /*[Header("WallJump Parameters")]
     [Tooltip("Vitesse de déscente des murs quand accroché aux murs")]
@@ -89,8 +101,45 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("Cette CollisionLayer est la même que celle utilisée pour le flyCheck du planage !")]
     [SerializeField] private LayerMask GroundCollisionLayers;
 
+    [Header("Hardened mode Parameters")]
+    [Tooltip("touche du bas du controler")]
+    [SerializeField] private KeyCode DownKey = KeyCode.S;
+    [Tooltip("vérification du mode durci")]
+    [SerializeField] private bool isHardened = false;
+    [Tooltip("durée maxiamle du mode durci")]
+    [SerializeField] private float hardenedDuration;
+    private float hardenedDCounter;
+    [Tooltip("vitesse de déplacement en mode durci")]
+    [SerializeField] private float hardMoveSpeed;
+    private float movehorizontalHardened;
+    [Tooltip("puissance du saut quand le mode durci erst activé")]
+    [SerializeField] private float hardJumpForce;
+
+    [Header("Hardened Camera Parameters")]
+    [Tooltip("transform de la caméra en mode durci pour le screanshake et autre mouvements de caméra")]
+    [SerializeField] private Transform cameraTransHardened;
+    [Tooltip("Locale scale de la caméra en idle, sur place")]
+    [SerializeField] private Vector3 notMovingCamScale;
+    [Tooltip("Locale scale de la caméra en mouvement de type sprint")]
+    [SerializeField] private Vector3 sprintCamScale;
+    [Tooltip("durée du screen shake pour les retombées au sol en mode durci")]
+    [SerializeField] private float shakeDuration;
+    [Tooltip("courbe de mouvement de la caméra en screen shake")]
+    [SerializeField] private AnimationCurve shakeCurve;
+    private bool shakeStart;
+    [Tooltip("distance au sol minimale du perso pour déclancher le screen shake")]
+    [SerializeField] private float minDistanceForScreenShake;
+    [Tooltip("Taille du raycast pour la détéction au sol pour le screen shake")]
+    [SerializeField] private float screenShakeRaySize;
+    [Tooltip("PAS TOUCHE !!!")]
+    [SerializeField] private Vector2 screenShakeRayDirection;
+    private RaycastHit2D screenShakeRay;
+    private bool canScreenShake;
+
     [Header("Components")]
+    [Tooltip("rb utile pour les mouvements")]
     public Rigidbody2D rb;
+    [Tooltip("sprite renderer utilisé pour le sens de déplacement du personnage")]
     public SpriteRenderer spriteRenderer;
     private bool isFacingRight = true;
 
@@ -109,33 +158,92 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        //Bool de vérification de collision au sol
+        //vérification de la vitesse max de chute du perso
+        if (rb.velocity.y >= maxVerticalSpeed)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, maxVerticalSpeed);
+        }
+
+        //Bool de vérification de collision au solA
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, GroundCollisionLayers);
 
         //Bool de vrification de collision pour le fly
         hitground = Physics2D.Raycast(transform.position, directionRay, sizeRay, GroundCollisionLayers);
         cannotFly = hitground.collider;
 
+        //Bool de vérif de collision pour le ScreenShake, il est ultra petit
+        screenShakeRay = Physics2D.Raycast(transform.position, screenShakeRayDirection, screenShakeRaySize, GroundCollisionLayers);
+
         //Bool de vérification de collision aux murs
         //isCloseToWall = Physics2D.OverlapCircle(wallCheck.position, wallCheckRadius, WallCollisionLayer);
-
         //Raycast de verification de collision aux murs pour le Wall Jump
         //wallJumpLeft = Physics2D.Raycast(transform.position, new Vector2(-1, 0), 2, WallCollisionLayer);
         //wallJumpRight = Physics2D.Raycast(transform.position, new Vector2(1, 0), 2, WallCollisionLayer);
 
         //Valeur des vitesses 
         movehorizontal = Input.GetAxisRaw("Horizontal") * moveSpeed * Time.fixedDeltaTime;
+        movehorizontalHardened = Input.GetAxisRaw("Horizontal") * hardMoveSpeed * Time.fixedDeltaTime;
 
-        //Appel des méthodes de mouvements
-        Moveperso(movehorizontal);
-        Jump();
-        //WallGrab();
-        //WallJump();
-        Planer();
+        //Changement de mode du perso
+        if (Input.GetKey(DownKey) && Input.GetButtonDown("Jump"))
+        {
+            hardenedDCounter = hardenedDuration;
+        }
+        if (hardenedDCounter > 0f)
+        {
+            isHardened = true;
+            hardenedDCounter -= Time.deltaTime;
+        }
+        else
+        {
+            isHardened = false;
+            hardenedDCounter = -0.1f;
+        }
+
+        //verif du screen shake avec condition de dépassement
+        if (screenShakeRay.distance >= minDistanceForScreenShake + 0.2f)
+        {
+            canScreenShake = true;
+        }
+
+        //Appel des méthodes de mouvements en mode normal
+        if (!isHardened)
+        {
+            spriteRenderer.color = Color.white;
+            Moveperso(movehorizontal);
+            GravityPhysics(baseOriginGravityScale);
+            Jump(jumpForce);
+            if (canScreenShake && screenShakeRay.distance < minDistanceForScreenShake)
+            {
+                isJumping = false;
+                canScreenShake = false;
+            }
+            Planer();
+        }
+
+        //Appel des méthodes de mouvements en mode durci
+        if (isHardened)
+        {
+            spriteRenderer.color = Color.red;
+            Moveperso(movehorizontalHardened);
+            GravityPhysics(hardenedOriginGravityScale);
+            Jump(hardJumpForce);
+            if (canScreenShake && screenShakeRay.distance < minDistanceForScreenShake)
+            {
+                isJumping = false;
+                canScreenShake = false;
+                StartCoroutine(ScreenShake());
+            }
+        }
+
+        //Appel du Dash ou action de sorti de mode durci
         if (Input.GetKeyDown(dashKey) && canDash)
         {
             StartCoroutine(Dash());
+            hardenedDCounter = -0.1f;
         }
+
+        //Flip du sprite en fonction de la direction de déplacement
         Flip();
     }
 
@@ -145,7 +253,7 @@ public class PlayerMovement : MonoBehaviour
         rb.velocity = Vector3.SmoothDamp(rb.velocity, baseMoveVelocity, ref velocity, SDOffset);
     }
 
-    void Jump()
+    void Jump(float _jumpForce)
     {
         if (isGrounded)
         {
@@ -169,14 +277,38 @@ public class PlayerMovement : MonoBehaviour
 
         if (coyoteTimeCounter > 0f && jumpBufferTimeCounter > 0f)
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            rb.velocity = new Vector2(rb.velocity.x, _jumpForce);
             jumpBufferTimeCounter = 0f;
+            isJumping = true;
         }
 
         if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
         {
             rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
             coyoteTimeCounter = 0f;
+        }
+    }
+
+    void GravityPhysics(float originGS)
+    {
+        if (isGrounded)
+        {
+            rb.gravityScale = originGS;
+        }
+
+        else if (!isGrounded && isFlying)
+        {
+            rb.gravityScale = originGS;
+        }
+
+        else if (!isGrounded)
+        {
+            rb.gravityScale += Time.deltaTime * gravityScaleIncrease;
+        }
+
+        if (rb.gravityScale >= gravityLimit)
+        {
+            rb.gravityScale = gravityLimit;
         }
     }
 
@@ -187,12 +319,10 @@ public class PlayerMovement : MonoBehaviour
         {
             canDash = dashCooldown;
         }
-
         else
         {
             canDash += Time.deltaTime;
         }
-
         if (Input.GetKeyDown(dashKey) && canDash == dashCooldown)
         {
             rb.AddForce(dashDir);
@@ -225,16 +355,18 @@ public class PlayerMovement : MonoBehaviour
         {
             canPlane = false;
         }
-        
-        Vector3 flyVelocity = new Vector2(movehorizontal, SlowFall);
+
+        Vector3 flyVelocity = new Vector2(movehorizontal, SlowFall * Time.fixedDeltaTime);
         if (Input.GetButton("Jump") && canPlane)
         {
             rb.velocity = Vector3.SmoothDamp(rb.velocity, flyVelocity, ref velocity, SDOffset);
+            isFlying = true;
         }
 
         if (Input.GetButtonUp("Jump") && !cannotFly)
         {
             canPlane = true;
+            isFlying = false;
         }
     }
 
@@ -245,23 +377,19 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.velocity = Vector3.SmoothDamp(rb.velocity, grabVelocity, ref velocity, SDOffset);
         }
-
         if (Input.GetKeyUp(leftKey))
         {
             wallJumpBufferCounter = wallJumpBuffer; 
         }
-
         if (wallJumpLeft.collider)
         {
             wallJumpBufferCounter -= Time.deltaTime;
         }
-
         if (Input.GetKey(leftKey) && isCloseToLeftWall && !cannotFly && Input.GetButtonDown("Jump"))
         {
             rb.velocity = new Vector2(recoilWallJump, wallJumpForce);
             wallJumpBufferCounter = wallJumpBuffer;
         }
-
         if (wallJumpBufferCounter >= 0f && wallJumpLeft.collider && !cannotFly && Input.GetButtonDown("Jump") && Input.GetKey(rightKey))
         {
             rb.velocity = new Vector2(propulseWallJump, wallJumpForce*2);
@@ -276,23 +404,19 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.velocity = Vector3.SmoothDamp(rb.velocity, grabVelocity, ref velocity, SDOffset);
         }
-
         if (Input.GetKeyUp(rightKey))
         {
             wallJumpBufferCounter = wallJumpBuffer;
         }
-
         if (wallJumpRight.collider)
         {
             wallJumpBufferCounter -= Time.deltaTime;
         }
-
         if (Input.GetKey(rightKey) && isCloseToRightWall && !cannotFly && Input.GetButtonDown("Jump"))
         {
             rb.velocity = new Vector2(-recoilWallJump, wallJumpForce);
             wallJumpBufferCounter = wallJumpBuffer;
         }
-
         if (wallJumpBufferCounter >= 0f && isCloseToRightWall && !cannotFly && Input.GetButtonDown("Jump") && Input.GetKey(leftKey))
         {
             rb.velocity = new Vector2(-propulseWallJump, wallJumpForce * 2);
@@ -325,13 +449,11 @@ public class PlayerMovement : MonoBehaviour
         {
             wallJumpBufferCounter -= Time.deltaTime;
         }
-
         if(Input.GetButtonDown("Jump") && wallJumpBufferCounter > 0f)
         {
             isWallJump = true;
             rb.velocity = new Vector2(wallJumpDirection * powerWallJump.x, powerWallJump.y);
             wallJumpBufferCounter = 0f;
-
             if (transform.localScale.x != wallJumpDirection)
             {
                 isFacingRight = !isFacingRight;
@@ -339,7 +461,6 @@ public class PlayerMovement : MonoBehaviour
                 localScale.x *= -1f;
                 transform.localScale = localScale;
             }
-
             Invoke(nameof(StopWallJumping), wallJumpDuration);
         }
     }*/
@@ -360,6 +481,21 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    IEnumerator ScreenShake()
+
+    {
+        float elapsedTime = 0f;
+
+        while (elapsedTime < shakeDuration)
+        {
+            Vector3 originCamPos = new Vector3(cameraTransHardened.position.x, cameraTransHardened.position.y, cameraTransHardened.position.z);
+            elapsedTime += Time.deltaTime;
+            float shakeStrengh = shakeCurve.Evaluate(elapsedTime / shakeDuration);
+            cameraTransHardened.position = originCamPos + Random.insideUnitSphere * shakeStrengh;
+            yield return null;
+        }
+    }
+
     private void OnDrawGizmos()
     {
         //isGrounded
@@ -370,6 +506,10 @@ public class PlayerMovement : MonoBehaviour
         //cannotFly vercion Raycast
         Gizmos.color = Color.green;
         Gizmos.DrawLine(transform.position, hitground.point);
+
+        //ScreenShake groundCheck
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, screenShakeRay.point);
 
         //isCloseToWall
         //Gizmos.color = Color.blue;
