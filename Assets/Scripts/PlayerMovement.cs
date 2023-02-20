@@ -50,7 +50,7 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("La Trail pendant le Dash")]
     [SerializeField] private TrailRenderer trail;
 
-    [Header("Planer Parameters")]
+    /*[Header("Planer Parameters")]
     [Tooltip("PAS TOUCHE !!!")]
     [SerializeField] private Vector2 directionRay;
     [Tooltip("Permet de régler la hauteur minimale du perso nécaissaire pour planer")]
@@ -61,7 +61,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float SlowFall;
     //permet de déclancher le planage en double clic de saut
     private bool canPlane = false;
-    private bool isFlying = false;
+    private bool isFlying = false;*/
 
     /*[Header("WallJump Parameters")]
     [Tooltip("Vitesse de déscente des murs quand accroché aux murs")]
@@ -168,8 +168,8 @@ public class PlayerMovement : MonoBehaviour
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, GroundCollisionLayers);
 
         //Bool de vrification de collision pour le fly
-        hitground = Physics2D.Raycast(transform.position, directionRay, sizeRay, GroundCollisionLayers);
-        cannotFly = hitground.collider;
+        //hitground = Physics2D.Raycast(transform.position, directionRay, sizeRay, GroundCollisionLayers);
+        //cannotFly = hitground.collider;
 
         //Bool de vérif de collision pour le ScreenShake, il est ultra petit
         screenShakeRay = Physics2D.Raycast(transform.position, screenShakeRayDirection, screenShakeRaySize, GroundCollisionLayers);
@@ -218,7 +218,6 @@ public class PlayerMovement : MonoBehaviour
                 isJumping = false;
                 canScreenShake = false;
             }
-            Planer();
         }
 
         //Appel des méthodes de mouvements en mode durci
@@ -296,10 +295,10 @@ public class PlayerMovement : MonoBehaviour
             rb.gravityScale = originGS;
         }
 
-        else if (!isGrounded && isFlying)
+        /*else if (!isGrounded && isFlying)
         {
             rb.gravityScale = originGS;
-        }
+        }*/
 
         else if (!isGrounded)
         {
@@ -311,24 +310,6 @@ public class PlayerMovement : MonoBehaviour
             rb.gravityScale = gravityLimit;
         }
     }
-
-    /*void Dash()
-    {
-        Vector2 dashDir = new Vector2(dashPower * Mathf.Sign(rb.velocity.x), dashPowerCompensation);
-        if (canDash >= dashCooldown)
-        {
-            canDash = dashCooldown;
-        }
-        else
-        {
-            canDash += Time.deltaTime;
-        }
-        if (Input.GetKeyDown(dashKey) && canDash == dashCooldown)
-        {
-            rb.AddForce(dashDir);
-            canDash = 0f;
-        }
-    }*/
 
     private IEnumerator Dash()
     {
@@ -349,7 +330,71 @@ public class PlayerMovement : MonoBehaviour
         canDash = true;
     }
 
-    void Planer()
+    void Flip()
+    {
+        if (isFacingRight && movehorizontal < 0f || !isFacingRight && movehorizontal > 0f)
+        {
+            isFacingRight = !isFacingRight;
+            Vector3 localScale = transform.localScale;
+            localScale.x *= -1f;
+            transform.localScale = localScale;
+        }
+    }
+
+    IEnumerator ScreenShake()
+
+    {
+        float elapsedTime = 0f;
+
+        while (elapsedTime < shakeDuration)
+        {
+            Vector3 originCamPos = new Vector3(cameraTransHardened.position.x, cameraTransHardened.position.y, cameraTransHardened.position.z);
+            elapsedTime += Time.deltaTime;
+            float shakeStrengh = shakeCurve.Evaluate(elapsedTime / shakeDuration);
+            cameraTransHardened.position = originCamPos + Random.insideUnitSphere * shakeStrengh;
+            yield return null;
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        //isGrounded
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        Gizmos.DrawLine(groundCheck.position, GetComponentInParent<Transform>().position);
+
+        //cannotFly vercion Raycast
+        //Gizmos.color = Color.green;
+        //Gizmos.DrawLine(transform.position, hitground.point);
+
+        //ScreenShake groundCheck
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, screenShakeRay.point);
+
+        //isCloseToWall
+        //Gizmos.color = Color.blue;
+        //Gizmos.DrawWireSphere(wallCheck.position, wallCheckRadius);
+    }
+
+    /*void DashOld()
+    {
+        Vector2 dashDir = new Vector2(dashPower * Mathf.Sign(rb.velocity.x), dashPowerCompensation);
+        if (canDash >= dashCooldown)
+        {
+            canDash = dashCooldown;
+        }
+        else
+        {
+            canDash += Time.deltaTime;
+        }
+        if (Input.GetKeyDown(dashKey) && canDash == dashCooldown)
+        {
+            rb.AddForce(dashDir);
+            canDash = 0f;
+        }
+    }*/
+
+    /*void Planer()
     {
         if (cannotFly)
         {
@@ -368,7 +413,7 @@ public class PlayerMovement : MonoBehaviour
             canPlane = true;
             isFlying = false;
         }
-    }
+    }*/
 
     /*void LeftWallJumpOld()
     {
@@ -469,50 +514,4 @@ public class PlayerMovement : MonoBehaviour
     {
         isWallJump = false;
     }*/
-
-    void Flip()
-    {
-        if (isFacingRight && movehorizontal < 0f || !isFacingRight && movehorizontal > 0f)
-        {
-            isFacingRight = !isFacingRight;
-            Vector3 localScale = transform.localScale;
-            localScale.x *= -1f;
-            transform.localScale = localScale;
-        }
-    }
-
-    IEnumerator ScreenShake()
-
-    {
-        float elapsedTime = 0f;
-
-        while (elapsedTime < shakeDuration)
-        {
-            Vector3 originCamPos = new Vector3(cameraTransHardened.position.x, cameraTransHardened.position.y, cameraTransHardened.position.z);
-            elapsedTime += Time.deltaTime;
-            float shakeStrengh = shakeCurve.Evaluate(elapsedTime / shakeDuration);
-            cameraTransHardened.position = originCamPos + Random.insideUnitSphere * shakeStrengh;
-            yield return null;
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        //isGrounded
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        Gizmos.DrawLine(groundCheck.position, GetComponentInParent<Transform>().position);
-
-        //cannotFly vercion Raycast
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position, hitground.point);
-
-        //ScreenShake groundCheck
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position, screenShakeRay.point);
-
-        //isCloseToWall
-        //Gizmos.color = Color.blue;
-        //Gizmos.DrawWireSphere(wallCheck.position, wallCheckRadius);
-    }
 }
