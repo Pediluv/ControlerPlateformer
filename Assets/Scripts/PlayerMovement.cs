@@ -295,6 +295,7 @@ public class PlayerMovement : MonoBehaviour
             rb.gravityScale = originGS;
         }
 
+        //ancienne méthode de gestion de la gravité pour le planage
         /*else if (!isGrounded && isFlying)
         {
             rb.gravityScale = originGS;
