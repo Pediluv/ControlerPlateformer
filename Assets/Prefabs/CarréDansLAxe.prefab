@@ -241,7 +241,7 @@ TrailRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 1, g: 1, b: 1, a: 1}
+      key0: {r: 0.084590435, g: 1, b: 0, a: 1}
       key1: {r: 1, g: 1, b: 1, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
@@ -292,6 +292,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6919558f36471564fb822d5bf4e9d418, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  downKey: 115
+  upKey: 122
+  dashKey: 301
   moveSpeed: 400
   maxVerticalSpeed: 28
   jumpForce: 15
@@ -302,8 +305,8 @@ MonoBehaviour:
   hardenedOriginGravityScale: 3.5
   gravityScaleIncrease: 12.5
   gravityLimit: 8
-  dashKey: 301
-  dashPower: 70
+  gANCSize: 0
+  dashPower: 35
   dashTime: 0.2
   dashCooldown: 2
   trail: {fileID: 1921062669476280001}
@@ -312,7 +315,6 @@ MonoBehaviour:
   GroundCollisionLayers:
     serializedVersion: 2
     m_Bits: 8
-  DownKey: 115
   isHardened: 0
   hardenedDuration: 5
   hardMoveSpeed: 650
@@ -326,9 +328,9 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.5009308
-      inSlope: -0.50279236
-      outSlope: -0.50279236
+      value: 0.100120544
+      inSlope: -0.10198212
+      outSlope: -0.10198212
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
@@ -336,8 +338,8 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 1
       value: -0.0018615723
-      inSlope: -0.50279236
-      outSlope: -0.50279236
+      inSlope: -0.10198212
+      outSlope: -0.10198212
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334

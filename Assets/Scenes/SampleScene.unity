@@ -2532,11 +2532,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1921062669476280000, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -7.74
+      value: -7.79
       objectReference: {fileID: 0}
     - target: {fileID: 1921062669476280000, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.26
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1921062669476280000, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2570,6 +2570,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280001, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: m_Parameters.colorGradient.ctime1
+      value: 10794
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280001, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: m_Parameters.widthCurve.m_Curve.Array.data[1].time
+      value: 0.22549522
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280001, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: m_Parameters.widthCurve.m_Curve.Array.data[0].value
+      value: 0.57653046
+      objectReference: {fileID: 0}
     - target: {fileID: 1921062669476280059, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: m_Name
       value: "Carr\xE9DansLAxe"
@@ -2578,6 +2590,10 @@ PrefabInstance:
       propertyPath: cameraTransHardened
       value: 
       objectReference: {fileID: 519420032}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: gravityCompensation
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StickToGround : MonoBehaviour
+public class GroundAlignment : MonoBehaviour
 {
     [SerializeField] private RaycastHit2D groundCheck;
     [SerializeField] private float raySize;

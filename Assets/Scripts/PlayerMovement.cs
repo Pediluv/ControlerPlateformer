@@ -1,11 +1,20 @@
 using System.Collections;
 using System.ComponentModel;
+using System.Xml.Linq;
 using TreeEditor;
 using UnityEditor.Search;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Input list")]
+    [Tooltip("Touche du bas du controler")]
+    [SerializeField] private KeyCode downKey = KeyCode.S;
+    [Tooltip("Topuche du haut du controleur")]
+    [SerializeField] private KeyCode upKey = KeyCode.Z;
+    [Tooltip("Touche du Dash/autre action")]
+    [SerializeField] private KeyCode dashKey = KeyCode.CapsLock;
+
     [Header("Movement Parameters")]
     [Tooltip("Abusez pas vous comprenez qand même ce qu'est une vitesse de déplacement")]
     public float moveSpeed;
@@ -36,9 +45,13 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("La limite max de Gravity Scale, histoire que le perso s'enfonce pas à travers la map en sautant de trop haut")]
     [SerializeField] private float gravityLimit;
 
+    [Header("Stick To Ground Parameters")]
+    [Tooltip("taille minimum du perso au dessus du sol")]
+    [SerializeField] private float gANCSize; [Tooltip("empty")]
+    [SerializeField] private RaycastHit2D groundAlignementNC;
+
+
     [Header("Dash Parameters")]
-    [Tooltip("La touche du Dash/autre action")]
-    [SerializeField] private KeyCode dashKey = KeyCode.CapsLock;
     [Tooltip("Puissance du Dash")]
     [SerializeField] private float dashPower;
     [Tooltip("Durée du Dash, il vaut mieux la laisser faible, sinon le perso ne déscent plus pendant un moment")]
@@ -49,6 +62,7 @@ public class PlayerMovement : MonoBehaviour
     private bool isDashing = false;
     [Tooltip("La Trail pendant le Dash")]
     [SerializeField] private TrailRenderer trail;
+    private Vector2 dashDir;
 
     /*[Header("Planer Parameters")]
     [Tooltip("PAS TOUCHE !!!")]
@@ -102,8 +116,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask GroundCollisionLayers;
 
     [Header("Hardened mode Parameters")]
-    [Tooltip("touche du bas du controler")]
-    [SerializeField] private KeyCode DownKey = KeyCode.S;
     [Tooltip("vérification du mode durci")]
     [SerializeField] private bool isHardened = false;
     [Tooltip("durée maxiamle du mode durci")]
@@ -126,7 +138,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float shakeDuration;
     [Tooltip("courbe de mouvement de la caméra en screen shake")]
     [SerializeField] private AnimationCurve shakeCurve;
-    private bool shakeStart;
     [Tooltip("distance au sol minimale du perso pour déclancher le screen shake")]
     [SerializeField] private float minDistanceForScreenShake;
     [Tooltip("Taille du raycast pour la détéction au sol pour le screen shake")]
@@ -158,14 +169,9 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        //vérification de la vitesse max de chute du perso
-        if (rb.velocity.y >= maxVerticalSpeed)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, maxVerticalSpeed);
-        }
-
-        //Bool de vérification de collision au solA
+        //Vérifications de collision au solA
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, GroundCollisionLayers);
+        groundAlignementNC = Physics2D.Raycast(transform.position, -transform.up, gANCSize, GroundCollisionLayers);
 
         //Bool de vrification de collision pour le fly
         //hitground = Physics2D.Raycast(transform.position, directionRay, sizeRay, GroundCollisionLayers);
@@ -184,8 +190,14 @@ public class PlayerMovement : MonoBehaviour
         movehorizontal = Input.GetAxisRaw("Horizontal") * moveSpeed * Time.fixedDeltaTime;
         movehorizontalHardened = Input.GetAxisRaw("Horizontal") * hardMoveSpeed * Time.fixedDeltaTime;
 
+        //vérification de la vitesse max de chute du perso
+        if (rb.velocity.y >= maxVerticalSpeed)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, maxVerticalSpeed);
+        }
+
         //Changement de mode du perso
-        if (Input.GetKey(DownKey) && Input.GetButtonDown("Jump"))
+        if (Input.GetKey(downKey) && Input.GetButtonDown("Jump"))
         {
             hardenedDCounter = hardenedDuration;
         }
@@ -209,7 +221,6 @@ public class PlayerMovement : MonoBehaviour
         //Appel des méthodes de mouvements en mode normal
         if (!isHardened)
         {
-            spriteRenderer.color = Color.white;
             Moveperso(movehorizontal);
             GravityPhysics(baseOriginGravityScale);
             Jump(jumpForce);
@@ -223,7 +234,6 @@ public class PlayerMovement : MonoBehaviour
         //Appel des méthodes de mouvements en mode durci
         if (isHardened)
         {
-            spriteRenderer.color = Color.red;
             Moveperso(movehorizontalHardened);
             GravityPhysics(hardenedOriginGravityScale);
             Jump(hardJumpForce);
@@ -238,9 +248,24 @@ public class PlayerMovement : MonoBehaviour
         //Appel du Dash ou action de sorti de mode durci
         if (Input.GetKeyDown(dashKey) && canDash)
         {
-            StartCoroutine(Dash());
-            hardenedDCounter = -0.1f;
+            DashV3();
         }
+
+        //petites couleurs sympas
+        if (!isHardened && isDashing)
+        {
+            spriteRenderer.color = Color.green;
+        }
+        if (!isHardened && !isDashing)
+        {
+            spriteRenderer.color = Color.white;
+        }
+        if (isHardened)
+        {
+            spriteRenderer.color = Color.red;
+        }
+
+        //StickToGround();
 
         //Flip du sprite en fonction de la direction de déplacement
         Flip();
@@ -276,9 +301,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (coyoteTimeCounter > 0f && jumpBufferTimeCounter > 0f)
         {
+            isJumping = true;
             rb.velocity = new Vector2(rb.velocity.x, _jumpForce);
             jumpBufferTimeCounter = 0f;
-            isJumping = true;
         }
 
         if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
@@ -312,21 +337,38 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private IEnumerator Dash()
+    void StickToGround()
     {
-        //start of Dash
-        canDash = false;
+        if (groundAlignementNC.distance < gANCSize)
+        {
+            transform.position.Set(transform.position.x, transform.position.y + (gANCSize - groundAlignementNC.distance), transform.position.z);
+        }
+    }
+
+    void DashV3()
+    {
         isDashing = true;
-        float originalGravity = rb.gravityScale;
-        rb.gravityScale = 0f;
+        canDash = false;
         trail.emitting = true;
-        rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * dashPower, 0f);
+        dashDir = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+        if (dashDir == Vector2.zero)
+        {
+            dashDir = new Vector2(transform.localScale.x, 0f);
+        }
+        StartCoroutine(StopDashV3());
+
+        if (isDashing)
+        {
+            rb.velocity = dashPower * dashDir.normalized;
+            return;
+        }
+    }
+
+    IEnumerator StopDashV3()
+    {
         yield return new WaitForSeconds(dashTime);
-        //end of Dash
-        isDashing = false;
-        rb.gravityScale = originalGravity;
         trail.emitting = false;
-        //enable Dash after cooldown
+        isDashing = false;
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
     }
@@ -357,7 +399,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         //isGrounded
         Gizmos.color = Color.red;
@@ -375,9 +417,12 @@ public class PlayerMovement : MonoBehaviour
         //isCloseToWall
         //Gizmos.color = Color.blue;
         //Gizmos.DrawWireSphere(wallCheck.position, wallCheckRadius);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, groundAlignementNC.point);
     }
 
-    /*void DashOld()
+    /*void DashV1()
     {
         Vector2 dashDir = new Vector2(dashPower * Mathf.Sign(rb.velocity.x), dashPowerCompensation);
         if (canDash >= dashCooldown)
@@ -393,6 +438,36 @@ public class PlayerMovement : MonoBehaviour
             rb.AddForce(dashDir);
             canDash = 0f;
         }
+    }*/
+
+    /*IEnumerator DashV2()
+    {
+        //start of Dash
+        canDash = false;
+        isDashing = true;
+        float originalGravity = rb.gravityScale;
+        rb.gravityScale = 0f;
+        trail.emitting = true;
+        if (Input.GetButton("Horizontal"))
+        {
+            rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * dashPower, 0f);
+        }
+        else if (Input.GetKey(downKey))
+        {
+            rb.velocity = new Vector2(0f, -dashPower/gravityCompensation);
+        }
+         else if (Input.GetKey(upKey))
+        {
+            rb.velocity = new Vector2(0f, dashPower*gravityCompensation*100);
+        }
+        yield return new WaitForSeconds(dashTime);
+        //end of Dash
+        isDashing = false;
+        rb.gravityScale = originalGravity;
+        trail.emitting = false;
+        //enable Dash after cooldown
+        yield return new WaitForSeconds(dashCooldown);
+        canDash = true;
     }*/
 
     /*void Planer()
@@ -416,7 +491,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }*/
 
-    /*void LeftWallJumpOld()
+    /*void LeftWallJumpV1()
     {
         Vector3 grabVelocity = new Vector2(movehorizontal, grabSpeed);
         if (Input.GetButton("Horizontal") && isCloseToLeftWall && !cannotFly)
@@ -443,7 +518,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }*/
 
-    /*void RightWallJumpOld()
+    /*void RightWallJumpV1()
     {
         Vector3 grabVelocity = new Vector2(movehorizontal, grabSpeed);
         if (Input.GetButton("Horizontal") && isCloseToRightWall && !cannotFly)
@@ -470,7 +545,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }*/
 
-    /*void WallGrab()
+    /*void WallGrabV2()
     {
         if (isCloseToWall && !isGrounded && movehorizontal != 0f)
         {
@@ -483,7 +558,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }*/
 
-    /*void WallJump()
+    /*void WallJumpV2()
     {
         if (isWallGrab)
         {
@@ -511,7 +586,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }*/
 
-    /*void StopWallJumping()
+    /*void StopWallJumpingV2()
     {
         isWallJump = false;
     }*/
