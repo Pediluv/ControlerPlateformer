@@ -286,7 +286,7 @@ GameObject:
   - component: {fileID: 100189083}
   - component: {fileID: 100189082}
   m_Layer: 3
-  m_Name: Square (13)
+  m_Name: Pente
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -981,7 +981,7 @@ GameObject:
   - component: {fileID: 1032148436}
   - component: {fileID: 1032148435}
   m_Layer: 6
-  m_Name: Square (14)
+  m_Name: Wall 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1280,8 +1280,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1119149481}
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 8.57, y: -0.7704, z: -2.7727559}
-  m_LocalScale: {x: 1.9935945, y: 1, z: 1}
+  m_LocalPosition: {x: 13.5818, y: -0.77, z: -2.7727559}
+  m_LocalScale: {x: 1.9935945, y: 5.0763, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1057772463}
@@ -2231,7 +2231,7 @@ GameObject:
   - component: {fileID: 2014070964}
   - component: {fileID: 2014070967}
   m_Layer: 3
-  m_Name: Square
+  m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2335,8 +2335,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2014070962}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.9437, y: -1.4177978, z: -2.7727559}
-  m_LocalScale: {x: 29.183203, y: 1, z: 1}
+  m_LocalPosition: {x: 5.9872, y: -1.4177978, z: -2.7727559}
+  m_LocalScale: {x: 47.04488, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1057772463}
@@ -2381,7 +2381,7 @@ GameObject:
   - component: {fileID: 2053082125}
   - component: {fileID: 2053082124}
   m_Layer: 6
-  m_Name: Square (12)
+  m_Name: Wall 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2395,7 +2395,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2053082122}
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 11.62, y: 1.81, z: -2.7727559}
+  m_LocalPosition: {x: 28.69, y: 1.81, z: -2.7727559}
   m_LocalScale: {x: 10.388716, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2587,12 +2587,44 @@ PrefabInstance:
       value: "Carr\xE9DansLAxe"
       objectReference: {fileID: 0}
     - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: jumpForce
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: moveSpeed
+      value: 425
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: coyoteTime
+      value: 0.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: hardJumpForce
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: hardMoveSpeed
+      value: 450
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: jumpBufferTime
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: hardenedDuration
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: cameraTransHardened
       value: 
       objectReference: {fileID: 519420032}
     - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
       propertyPath: gravityCompensation
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1921062669476280060, guid: d6cb7c40e3b768a418cd493479a1efa3, type: 3}
+      propertyPath: gravityScaleIncrease
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
